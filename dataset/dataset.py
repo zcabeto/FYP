@@ -1,5 +1,6 @@
 ### IMPORTS ###
 import pyaudio as pa
+import extraction
 
 
 ### OVERALL DATASET ###
@@ -34,3 +35,7 @@ missing_ids = {}
 route = './LJSpeech-1.1/wavs/'
 dataset = TTS_Dataset()
 audio_texts = open('./LJSpeech-1.1/metadata.csv','r')
+
+def setup():
+    extraction.extractData(dataset, 20)
+    return dataset
