@@ -76,6 +76,5 @@ def word_to_ARPAbet(word):
         # Use the first pronunciation variant
         arpabet_word = pronunciations[0]
     else:
-        print(word)
-        return 1 / 0
+        raise Exception("the word '" + word + "' is not logged in the CMU Dictionary")
     return ' '.join(arpabet_word)
