@@ -1,7 +1,16 @@
 ### IMPORTS ### 
 import re
+import nltk
+from nltk.corpus import cmudict
+from nltk.tokenize import word_tokenize
+ARPAbet = cmudict.dict()
 
 ### LARGE MANAGER ###
+def pronounce(text):
+    text = cleanText(text)
+    text = phrase_to_ARPAbet(text)
+    return text
+
 def cleanText(text):
     text = standardise(text)
     text = expand_abbrevs(text)
@@ -54,3 +63,19 @@ def expand_abbrevs(text):
         return expansion
     # apply the function with created pattern and replacement
     return pattern.sub(replace, text)
+
+### CONVERT TO ARPABET ###
+def phrase_to_ARPAbet(phrase):
+    words = phrase.split(' ')
+    words = [word_to_ARPAbet(word) for word in words]
+    return ' '.join(words)
+
+def word_to_ARPAbet(word):
+    pronunciations = ARPAbet.get(word)
+    if pronunciations:
+        # Use the first pronunciation variant
+        arpabet_word = pronunciations[0]
+    else:
+        print(word)
+        return 1 / 0
+    return ' '.join(arpabet_word)
