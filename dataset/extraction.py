@@ -39,7 +39,7 @@ def nextData(destination, lineNo):
 
     # fix the inner data
     fileId = line_parts[0]
-    text = TextProcess.cleanText(line_parts[2].replace('\n',''))
+    text = TextProcess.pronounce(line_parts[2].replace('\n',''))
     audioFile = Path(route + fileId + '.wav')
     if audioFile.is_file():
         item = destination.addItem(fileId, text)
