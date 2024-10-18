@@ -37,19 +37,22 @@ def format_audio(data):
     return np.int16(data / np.max(np.abs(data)) * 32767)
 
 ### PREPARE FEATURES ###
-def getFeatures(audio):
-    spectrogram = make_spectrogram(audio)
+def getFeatures(audio, sr):
+    spectrogram = make_spectrogram(audio, sr, mel=True)
     spectrogram = normalise_and_scale(spectrogram)
     return spectrogram
 
-def make_spectrogram(audio, mel=True):
+def make_spectrogram(audio, sr, mel=True, n_mels=80):
     spectrogram = lb.stft(audio)
-    # convert to mel spectrogram
-    return spectrogram
+    if mel:
+        return lb.feature.melspectrogram(S=np.abs(spectrogram), sr=sr, n_mels=n_mels)
+    else:
+        return spectrogram
 
-### NORMALISATION & SCALING ###
-def normalise_and_scale(audio):
-    return audio
-
-def amplitude_to_db(audio):
-    return audio 
+def normalise_and_scale(spectrogram):
+    mean = np.mean(spectrogram)
+    std = np.std(spectrogram)
+    max_vol = mean + 2*std
+    spectrogram_scaled = np.clip(spectrogram, 0, max_vol)
+    spectrogram_normalised = (spectrogram_scaled - mean) / std
+    return spectrogram_normalised

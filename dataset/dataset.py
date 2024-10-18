@@ -52,5 +52,5 @@ dataset = TTS_Dataset()
 audio_texts = open('./LJSpeech-1.1/metadata.csv','r')
 
 def setup():
-    extraction.extractData(dataset, 20)
+    extraction.extractData(dataset, 100)
     return dataset
