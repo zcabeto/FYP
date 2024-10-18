@@ -7,12 +7,11 @@ import numpy as np
 
 
 ### OVERALL MANAGER ###
-def getFeatures(filepath):
+def getAudio(filepath):
     raw_audio, sr = lb.load(filepath, sr=None)
-    process_audio = processAudio(raw_audio)
-    audio_features = buildFeatures(process_audio)
-    playable_audio = format_audio(process_audio)
-    return audio_features, playable_audio, sr
+    processed_audio = processAudio(raw_audio)
+    playable_audio = format_audio(processed_audio)
+    return processed_audio, playable_audio, sr
 
 ### GENERAL AUDIO CLEANING ###
 def processAudio(audio):
@@ -38,7 +37,7 @@ def format_audio(data):
     return np.int16(data / np.max(np.abs(data)) * 32767)
 
 ### PREPARE FEATURES ###
-def buildFeatures(audio):
+def getFeatures(audio):
     spectrogram = make_spectrogram(audio)
     spectrogram = normalise_and_scale(spectrogram)
     return spectrogram

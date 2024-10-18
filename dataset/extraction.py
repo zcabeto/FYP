@@ -43,9 +43,10 @@ def nextData(destination, lineNo):
     audioFile = Path(route + fileId + '.wav')
     if audioFile.is_file():
         item = destination.addItem(fileId)
-        audioFeatures, audio, sr = AudioProcess.getFeatures(audioFile)
+        raw_audio, playable_audio, sr = AudioProcess.getAudio(audioFile)
+        audioFeatures = AudioProcess.getFeatures(raw_audio)
         textFeatures = TextProcess.getFeatures(text)
-        item.setData(text, audio, sr)
+        item.setData(text, playable_audio, sr)
         item.setFeatures(textFeatures, audioFeatures)
     else:
         missing_ids[line_parts[0]] = None
