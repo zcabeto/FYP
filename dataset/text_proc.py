@@ -6,7 +6,7 @@ from nltk.tokenize import word_tokenize
 ARPAbet = cmudict.dict()
 
 ### LARGE MANAGER ###
-def pronounce(text):
+def getFeatures(text):
     text = cleanText(text)
     text = phrase_to_ARPAbet(text)
     return text
@@ -21,7 +21,8 @@ def cut_whitespace(text):
     return re.sub(r'\s+', ' ', text.strip())
 
 def remove_punctuation(text):
-    return re.sub("['`!(),.:;?\"]", '', text)
+    text = re.sub("['`!(),.:;?\"]", '', text)
+    return re.sub("-", " ", text)
 
 def lower_case(text):
     return text.lower()
@@ -76,5 +77,6 @@ def word_to_ARPAbet(word):
         # Use the first pronunciation variant
         arpabet_word = pronunciations[0]
     else:
-        raise Exception("the word '" + word + "' is not logged in the CMU Dictionary")
+        arpabet_word = word
+        print("the word '" + word + "' is not logged in the CMU Dictionary")
     return ' '.join(arpabet_word)
