@@ -39,11 +39,14 @@ def nextData(destination, lineNo):
 
     # fix the inner data
     fileId = line_parts[0]
-    text = TextProcess.pronounce(line_parts[2].replace('\n',''))
+    text = line_parts[2].replace('\n','')
     audioFile = Path(route + fileId + '.wav')
     if audioFile.is_file():
-        item = destination.addItem(fileId, text)
-        AudioProcess.extractAudioData(item)
+        item = destination.addItem(fileId)
+        audioFeatures, audio, sr = AudioProcess.getFeatures(audioFile)
+        textFeatures = TextProcess.getFeatures(text)
+        item.setData(text, audio, sr)
+        item.setFeatures(textFeatures, audioFeatures)
     else:
         missing_ids[line_parts[0]] = None
     

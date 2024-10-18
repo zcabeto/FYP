@@ -11,19 +11,19 @@ import dataset as ds
 ### PLAY AUDIO FILES ###
 def checkAudioRandom():
     id, item = random.sample(list(dataset.items()), 5)[0]
-    print(id)
-    print(item.text)
-    playGeneric(item.data, item.sr)
-    return item.text, item.data, item.sr
+    text, audio, sr = item.getData()
+    playGeneric(id, text, audio, sr)
+    return text, audio, sr
 
 def checkAudioSpecific(id):
     if dataset.set[id]:
-        print(id)
-        print(dataset.set[id].text)
-        playGeneric(dataset.set[id].data, dataset.set[id].sr)
-        return dataset.set[id].text, dataset.set[id].data, dataset.set[id].sr
+        text, audio, sr = dataset.set[id].getData()
+        playGeneric(id, text, audio, sr)
+        return text, audio, sr
 
-def playGeneric(data, sr):
+def playGeneric(id, text, data, sr):
+    print(id)
+    print(text)
     p = pa.PyAudio()
     try:
         stream = p.open(format=pa.paInt16, channels=1, rate=sr, output=True)

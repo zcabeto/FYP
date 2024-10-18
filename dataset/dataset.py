@@ -7,8 +7,8 @@ import extraction
 class TTS_Dataset:
     def __init__(self):
         self.set = {}
-    def addItem(self, id, text):
-        item = TTS_Item(fileFromId(id), text)
+    def addItem(self, id):
+        item = TTS_Item(id)
         self.set[id] = item
         return item
     def items(self):
@@ -16,16 +16,31 @@ class TTS_Dataset:
 
 ### EACH ITEM SPLIT UP ###
 class TTS_Item:
-    def __init__(self, audioFile, text):
-        self.file = audioFile
-        self.text = text
-        self.data = None
+    def __init__(self, id):
+        self.id = id
+        self.filepath = fileFromId(id)
+        
+        self.textFeature = None
+        self.audioFeature = None
+        self.text = None
+        self.audio = None
         self.sr = None
 
-    def setAudio(self, data, sr):
-        self.data = data
-        self.sr = sr
+    def setFeatures(self, textFeature, audioFeature):
+        self.textFeature = textFeature
+        self.audioFeature = audioFeature
 
+    def getFeatures(self):
+        return self.textFeature, self.audioFeature
+
+    def setData(self, text, audio, sr):
+        self.text = text
+        self.audio = audio
+        self.sr = sr
+    
+    def getData(self):
+        return self.text, self.audio, self.sr
+    
 ### AUXILLIARY FUNCTIONS ###
 def fileFromId(id):
     return route + id + '.wav'
