@@ -2,8 +2,9 @@
 import re
 import nltk
 from nltk.corpus import cmudict
-from nltk.tokenize import word_tokenize
+from g2p_en import G2p
 ARPAbet = cmudict.dict()
+g2p = G2p()
 
 ### LARGE MANAGER ###
 def getFeatures(text):
@@ -51,7 +52,9 @@ abbrev = {'mrs' :   'misses',
         'esq'   :   'esquire',
         'ltd'   :   'limited',
         'col'   :   'colonel',
-        'ft'    :   'fort'
+        'ft'    :   'fort',
+        'ie'    :   'i ee',
+        'eg'    :   'ee gee'
 }
 
 def expand_abbrevs(text):    
@@ -72,11 +75,13 @@ def phrase_to_ARPAbet(phrase):
     return ' '.join(words)
 
 def word_to_ARPAbet(word):
+    if word == '': return ''
     pronunciations = ARPAbet.get(word)
     if pronunciations:
         # Use the first pronunciation variant
         arpabet_word = pronunciations[0]
     else:
-        arpabet_word = word
-        print("the word '" + word + "' is not logged in the CMU Dictionary")
+        # use g2p to filter word into likliest equivalent form
+        arpabet_word = g2p(word)
+        arpabet_word = [phoneme for phoneme in arpabet_word if phoneme.isalpha()]
     return ' '.join(arpabet_word)
