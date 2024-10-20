@@ -1,10 +1,24 @@
 ### IMPORTS ### 
 import re
+import numpy as np
 import nltk
 from nltk.corpus import cmudict
 from g2p_en import G2p
 ARPAbet = cmudict.dict()
 g2p = G2p()
+
+### CREATE ENUMERATED SET ###
+arpabet_symbols = set()
+for word in ARPAbet:
+    for pronunciation in ARPAbet[word]:
+        for phoneme in pronunciation:
+            arpabet_symbols.add(phoneme)
+arpabet_symbols = sorted(arpabet_symbols)
+arpabet_enum = {}
+counter = 1
+for symbol in arpabet_symbols:
+    arpabet_enum[symbol] = counter
+    counter += 1
 
 ### LARGE MANAGER ###
 def getFeatures(text):
@@ -71,17 +85,19 @@ def expand_abbrevs(text):
 ### CONVERT TO ARPABET ###
 def phrase_to_ARPAbet(phrase):
     words = phrase.split(' ')
-    words = [word_to_ARPAbet(word) for word in words]
-    return ' '.join(words)
+    phonetic_phrase = []
+    for word in words:
+        phonetic_phrase += word_to_ARPAbet(word)
+    return np.array(phonetic_phrase)
 
 def word_to_ARPAbet(word):
     if word == '': return ''
     pronunciations = ARPAbet.get(word)
     if pronunciations:
         # Use the first pronunciation variant
-        arpabet_word = pronunciations[0]
+        arpabet_word = [arpabet_enum[phoneme] for phoneme in pronunciations[0]]
     else:
         # use g2p to filter word into likliest equivalent form
         arpabet_word = g2p(word)
-        arpabet_word = [phoneme for phoneme in arpabet_word if phoneme.isalpha()]
-    return ' '.join(arpabet_word)
+        arpabet_word = [arpabet_enum[phoneme] for phoneme in arpabet_word if phoneme.isalpha()]
+    return arpabet_word
