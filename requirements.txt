@@ -1,0 +1,8 @@
+pyaudio
+librosa
+numpy
+matplotlib
+nltk
+g2p_en
+sounddevice
+torch
