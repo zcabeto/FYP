@@ -55,3 +55,10 @@ decoder = NN.Decoder(
 model = NN.Seq2Seq(encoder, decoder).to(device)
 criterion = nn.L1Loss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+print("Beginning Training")
+#train(model, device, train_loader, criterion, optimizer)
+print("Training complete.")
+#test(model, device, test_loader, criterion, optimizer)
+#print("Testing complete. Now to have a go")
+
