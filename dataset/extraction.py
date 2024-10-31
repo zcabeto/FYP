@@ -73,7 +73,6 @@ def extractData(destination, limit=13100):
     print('Normalising & Scaling Data')
     mean = np.mean(total_audio)
     stdev = np.std(total_audio)
-    print(mean, stdev)
     destination.setStats(mean, stdev)
     for item in destination.setlist:
         textFeature, audioFeature = item.getFeatures()
