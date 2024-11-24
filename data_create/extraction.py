@@ -24,7 +24,7 @@ def fileFromId(id):
 
 
 ### ITERATE THROUGH DATA ###
-def nextData(destination, lineNo, total_audio):
+def nextData(destination, lineNo, total_audio, n_mels):
     # get the line data
     line = audio_texts.readline()
     if not line: return False
@@ -47,9 +47,10 @@ def nextData(destination, lineNo, total_audio):
     if audioFile.is_file():
         item = ds.TTS_Item(fileId)
         raw_audio, sr = AudioProcess.getAudio(audioFile)
-        audioFeatures = AudioProcess.getFeatures(raw_audio, sr)
+        audioFeatures = AudioProcess.getFeatures(raw_audio, n_mels, sr=sr)
         total_audio = np.concatenate((total_audio, audioFeatures.flatten()))
         textFeatures = TextProcess.getFeatures(text)
+        #if lineNo < 10: print(len(textFeatures), len(audioFeatures))
         item.setData(text, raw_audio, sr)
         item.setFeatures(textFeatures, audioFeatures)
         destination.addItem(item)
@@ -59,16 +60,18 @@ def nextData(destination, lineNo, total_audio):
     # return to allow looping
     return lineNo, total_audio
 
-def extractData(destination, limit=13100):
-    last_min = 0
+
+def extractData(destination, n_mels, limit=13100):
     count = 0
     lineNo = 1
+    last_min = 0
     total_audio = np.array([])
     start_time = time.time()
     print('Extracting data')
     while lineNo:
-        lineNo, total_audio = nextData(destination, lineNo, total_audio)
-        if progress_tracker(count, limit, start_time, last_min): break
+        lineNo, total_audio = nextData(destination, lineNo, total_audio, n_mels)
+        hit_limit, last_min = progress_tracker(count, limit, start_time, last_min)
+        if hit_limit: break
         count += 1
     print('Normalising & Scaling Data')
     mean = np.mean(total_audio)
@@ -85,7 +88,8 @@ def progress_tracker(count, limit, start_time, last_min):
     time_passed = datetime.timedelta(seconds=(time.time()-start_time))
     minutes_passed = int(time_passed.total_seconds() // 60)
     if int(minutes_passed) > last_min:
-        last_min += time_passed.min
+        last_min = minutes_passed
         print(f"Extraction {percent}% complete ({count}/{limit}). Run for {time_passed}.")
-    if count >= limit: return True
-    else: return False
+    
+    if count >= limit:  return True, last_min
+    else:               return False, last_min
