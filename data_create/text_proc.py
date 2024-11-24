@@ -9,13 +9,14 @@ g2p = G2p()
 
 ### CREATE ENUMERATED SET ###
 arpabet_symbols = set()
+
 for word in ARPAbet:
     for pronunciation in ARPAbet[word]:
         for phoneme in pronunciation:
             arpabet_symbols.add(phoneme)
 arpabet_symbols = sorted(arpabet_symbols)
 arpabet_enum = {}
-counter = 1
+counter = 0
 for symbol in arpabet_symbols:
     arpabet_enum[symbol] = counter
     counter += 1
