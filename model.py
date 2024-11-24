@@ -15,9 +15,9 @@ class Encoder(nn.Module):
         )
 
     def forward(self, x, lengths):
-        x = self.embedding(x)
+        x = self.embedding(x)                       # convert sequences to embeddings
         packed = nn.utils.rnn.pack_padded_sequence(x, lengths.cpu(), batch_first=True, enforce_sorted=False)
-        outputs, (hidden, cell) = self.rnn(packed)
+        outputs, (hidden, cell) = self.rnn(packed)  # loop sending the batch through the LSTM
         outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
         return outputs, hidden, cell
 
@@ -38,16 +38,15 @@ class Decoder(nn.Module):
         batch_size, max_seq_len, _ = audio_targets.size()
         decoder_hidden = None  # init hidden state
         outputs = []
-        # teacher forcing - use actual audio targets as inputs during training
+        # teacher forcing - use actual context of known info during training
         for t in range(max_seq_len):
             if decoder_hidden is not None:
                 attn_weights = self.compute_attention(decoder_hidden[0][-1], encoder_outputs)
                 context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
-                decoder_input = torch.cat([audio_targets[:, t, :].unsqueeze(1), context], dim=2)
             else: # first time step
                 context = encoder_outputs.mean(dim=1, keepdim=True)
-                decoder_input = torch.cat([audio_targets[:, t, :].unsqueeze(1), context], dim=2)
-
+            
+            decoder_input = torch.cat([audio_targets[:, t, :].unsqueeze(1), context], dim=2)
             # run the RNN
             output, decoder_hidden = self.rnn(decoder_input, decoder_hidden)
 
@@ -70,14 +69,16 @@ class Seq2Seq(nn.Module):
     def __init__(self, encoder, decoder):
         super(Seq2Seq, self).__init__()
         self.encoder = encoder
+        encoder.train()
         self.decoder = decoder
+        decoder.train()
 
     def forward(self, text_inputs, text_lengths, audio_targets, audio_lengths):
         encoder_outputs, hidden, cell = self.encoder(text_inputs, text_lengths)
         outputs = self.decoder(encoder_outputs, audio_targets, audio_lengths)
         return outputs
     
-    def generate(self, text_inputs, max_length):
+    def generate(self, text_inputs):
         self.encoder.eval()
         self.decoder.eval()
         with torch.no_grad():
@@ -85,10 +86,10 @@ class Seq2Seq(nn.Module):
             encoder_outputs, hidden, cell = self.encoder(text_inputs, text_lengths)
             batch_size = text_inputs.size(0)
             num_mels = self.decoder.fc.out_features
+            max_length = text_inputs.size(1) * 10
             outputs = []
             decoder_hidden = None  # init hidden state
             prev_output = torch.zeros(batch_size, 1, num_mels).to(text_inputs.device)
-
             for t in range(max_length):
                 if decoder_hidden is not None:
                     attn_weights = self.decoder.compute_attention(decoder_hidden[0][-1], encoder_outputs)
