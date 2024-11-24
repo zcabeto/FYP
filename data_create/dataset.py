@@ -20,16 +20,23 @@ class TTS_Dataset(Dataset):
     def __getitem__(self, idx):
         return self.setlist[idx].getFeatures()
     
-    def split_train_test(self, test_amount=0.2):
+    def split_sets(self, test_amount=0.2, val=0):
         train_set = TTS_Dataset()
+        val_set = None
+        if val: val_set = TTS_Dataset()
         test_set = TTS_Dataset()
         index = 0
         for item in self.setlist:
             if index <= len(self.setlist)*(1-test_amount):
-                train_set.addItem(item)
+                if index > len(self.setlist)*(1-test_amount) - val:
+                    val_set.addItem(item)
+                else:
+                    train_set.addItem(item)
             else:
                 test_set.addItem(item)
             index += 1
+        if val:
+            return train_set, val_set, test_set
         return train_set, test_set
     
     def setStats(self, mean, stdev):
@@ -73,6 +80,6 @@ route = './LJSpeech-1.1/wavs/'
 dataset = TTS_Dataset()
 audio_texts = open('./LJSpeech-1.1/metadata.csv','r')
 
-def setup(limit=13100):
-    extraction.extractData(dataset, limit=limit)
+def setup(n_mels, limit=13100):
+    extraction.extractData(dataset, n_mels, limit=limit)
     return dataset
