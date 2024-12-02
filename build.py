@@ -177,3 +177,17 @@ def test(model, test_loader, criterion, optimiser):
     avg_test_loss = test_loss / len(test_loader)
     print(f'Average Test Loss: {avg_test_loss:.4f}')
     return avg_test_loss
+
+def plotFeatures(data, data_name, save=False):  # note fft (dense sampling FT), hopsize, windowsize stuff for later
+    plt.figure(figsize=(10,4))
+    img = display.specshow(data, y_axis='log', x_axis='time', cmap='inferno')
+    plt.title(data_name)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Frequency (Hz)')
+    # plt.yticks(np.array([numbers]), np.array([labels])) to change the values on the axis
+    plt.colorbar(img, format="%+2.f dB")
+    
+    if (save):
+        plt.savefig(data_name+'.png')
+    else:
+        plt.show()
