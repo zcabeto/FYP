@@ -8,9 +8,11 @@ import datetime
 from . import dataset as ds
 
 missing_ids = {}
-route = './LJSpeech-1.1/wavs/'
-audio_texts = open('./LJSpeech-1.1/metadata.csv','r')
 
+from pathlib import Path
+root_dir = str(Path(__file__).resolve().parent.parent.parent)
+audio_texts = open(root_dir+"/LJSpeech-1.1/metadata.csv", 'r')
+route = root_dir + "/LJSpeech-1.1/wavs/"
 
 ### AUXILLIARY FUNCTIONS ###
 def makeId(validId, newNum):
@@ -51,7 +53,7 @@ def nextData(destination, lineNo, total_audio, n_mels):
         total_audio = np.concatenate((total_audio, audioFeatures.flatten()))
         textFeatures = TextProcess.getFeatures(text)
         #if lineNo < 10: print(len(textFeatures), len(audioFeatures))
-        item.setData(text, raw_audio, sr)
+        #item.setData(text, raw_audio, sr)
         item.setFeatures(textFeatures, audioFeatures)
         destination.addItem(item)
     else:
@@ -89,7 +91,7 @@ def progress_tracker(count, limit, start_time, last_min):
     minutes_passed = int(time_passed.total_seconds() // 60)
     if int(minutes_passed) > last_min:
         last_min = minutes_passed
-        print(f"Extraction {percent}% complete ({count}/{limit}). Run for {time_passed}.")
+        print(f"Run for {time_passed} - {percent}% complete ({count}/{limit}).")
     
     if count >= limit:  return True, last_min
     else:               return False, last_min
