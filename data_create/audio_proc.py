@@ -1,7 +1,4 @@
 ### IMPORTS ###
-import sounddevice as sd
-import pyaudio as pa
-import soundfile as sf
 import librosa as lb
 import numpy as np
 from sklearn.decomposition import PCA
@@ -16,7 +13,7 @@ def getAudio(filepath):
     raw_audio, sr = lb.load(filepath, sr=None)
 
     audio = trim_edges(raw_audio)
-    audio = spectral_gate(audio)
+    #audio = spectral_gate(audio)
     audio = cut_pauses(audio)
     return audio, sr
 
@@ -57,10 +54,11 @@ def reduce_noise_with_pca(spectrogram, variance_threshold=0.9):
     pca = PCA()
     pca.fit(spectrogram)
     cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
-    n_components = np.searchsorted(cumulative_variance, variance_threshold) + 1
+    n_components_keep = np.searchsorted(cumulative_variance, variance_threshold) + 1
     # Apply PCA with the desired number of components
-    pca = PCA(n_components=n_components)
+    pca = PCA(n_components=n_components_keep)
     spectrogram_transformed = pca.fit_transform(spectrogram)
+    spectrogram_transformed[:, :1] = 0
 
     # Reconstruct the spectrogram
     spectrogram_reconstructed = pca.inverse_transform(spectrogram_transformed)
@@ -97,8 +95,8 @@ def getFeatures(audio, n_mels, sr=22050, mel=True, n_fft=1024, hop_length=256):
 def normalise_and_scale(spectrogram, mean, stdev):
     spectrogram = lb.power_to_db(spectrogram, ref=1.0)
     spectrogram_normalised = (spectrogram - mean) / stdev
-    return reduce_noise_with_pca(spectrogram_normalised)
-    #return spectrogram_normalised
+    #return spectrogram_normalised, reduce_noise_with_pca(spectrogram_normalised)
+    return spectrogram_normalised
 
 ### REVERSAL TO PLAY ###
 def play_mel_spectrogram(spectrogram, mean, stdev, sr=22050):
