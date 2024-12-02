@@ -15,14 +15,15 @@ embedding_dim = 4900    # likely 50-100 layers for <100,000 sentences
 hidden_dim = 140        # less than embedding_dim to combine & not overfit
 num_layers = 2          # start at 2, increase for more quality
 num_mels = 256          # 256 best quality, 80 smallest size. Proper run ~1000
-num_epochs = 10
+num_epochs = 11
 learning_rate = 0.01
 batch_size = 32         # how many to process at once, probs small to ensure matchup
-n = 1000                 # number of datapoints to run
+use_existing_data = True
+n = 13000                 # number of datapoints to run
 
 if __name__ == '__main__':
     print('Initialising Data')
-    train_set, val_set, test_set = getData(num_mels=num_mels, batch_size=batch_size, n=n)
+    train_set, val_set, test_set = getData(num_mels=num_mels, batch_size=batch_size, n=n, use_existing_data=use_existing_data)
 
     print('Initialising Model')
     model, criterion, optimiser, device = getModel(
@@ -39,7 +40,7 @@ if __name__ == '__main__':
 
     print("Testing Model")
     test(model, test_set, criterion, optimiser)
-    
+
 '''
 def spectral_subtraction(raw_spectrogram, noise_spectrogram, alpha=2.0, beta=1.0):
     """

@@ -59,7 +59,7 @@ class TTS_Item:
         self.audioFeature = audioFeature
 
     def getFeatures(self):
-        return self.textFeature, self.audioFeature
+        return self.textFeature, self.audioFeature#, self.audio
 
     def setData(self, text, audio, sr):
         self.text = text
@@ -81,6 +81,6 @@ root_dir = str(Path(__file__).resolve().parent.parent.parent)
 audio_texts = open(root_dir+"/LJSpeech-1.1/metadata.csv", 'r')
 route = root_dir + "/LJSpeech-1.1/wavs/"
 
-def setup(n_mels, limit=13100):
-    extraction.extractData(dataset, n_mels, limit=limit)
+def setup(n_mels, limit=13100, use_existing_data=False):
+    extraction.extractData(dataset, n_mels, limit=limit, use_existing_data=use_existing_data)
     return dataset

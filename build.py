@@ -15,10 +15,10 @@ from data_create import dataset as ds
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.mps.is_available() else 'cpu')
 
-def getData(num_mels, batch_size, n):
-    dataset = ds.setup(num_mels, limit=n)
+def getData(num_mels, batch_size, n, use_existing_data):
+    dataset = ds.setup(num_mels, limit=n, use_existing_data=use_existing_data)
     train_dataset, val_dataset, test_dataset = dataset.split_sets(val=10)
-        
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -62,7 +62,7 @@ def getModel(vocab_size, embedding_dim, hidden_dim, num_layers, num_mels, learni
 
 def collate_fn(batch):
     text_inputs, audio_targets = zip(*batch)
-    
+
     # Convert lists to tensors
     text_inputs = [torch.tensor(t, dtype=torch.long) for t in text_inputs]
     text_lengths = torch.tensor([len(t) for t in text_inputs], dtype=torch.long)
@@ -87,8 +87,8 @@ def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
     textFeatures = TextProcessor.getFeatures("hello world")
     text_input = torch.tensor(textFeatures, dtype=torch.long).unsqueeze(0).to(device)
     for epoch in range(num_epochs):
-        #generated_spectrogram = model.generate(text_input)
-        #plotFeatures(generated_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_'+str(epoch), save=True)
+        generated_spectrogram = model.generate(text_input)
+        plotFeatures(generated_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_'+str(epoch), save=True)
         '''print(f"Epoch {epoch} parameters...")
         for name, param in model.named_parameters():
             if param.requires_grad:
@@ -148,6 +148,7 @@ def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
         avg_validation_loss = validation_loss / len(val_loader)
         print(f"Validation Loss: {avg_validation_loss:.4f}")
         scheduler.step(avg_validation_loss)
+    #print(outputs)
 
 def test(model, test_loader, criterion, optimiser):
     model.eval()
@@ -186,7 +187,7 @@ def plotFeatures(data, data_name, save=False):  # note fft (dense sampling FT), 
     plt.ylabel('Frequency (Hz)')
     # plt.yticks(np.array([numbers]), np.array([labels])) to change the values on the axis
     plt.colorbar(img, format="%+2.f dB")
-    
+
     if (save):
         plt.savefig(data_name+'.png')
     else:
