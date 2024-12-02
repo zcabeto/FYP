@@ -1,5 +1,4 @@
 ### IMPORTS ###
-import pyaudio as pa
 from . import extraction
 from torch.utils.data import Dataset
 
@@ -19,7 +18,7 @@ class TTS_Dataset(Dataset):
 
     def __getitem__(self, idx):
         return self.setlist[idx].getFeatures()
-    
+
     def split_sets(self, test_amount=0.2, val=0):
         train_set = TTS_Dataset()
         val_set = None
@@ -38,7 +37,7 @@ class TTS_Dataset(Dataset):
         if val:
             return train_set, val_set, test_set
         return train_set, test_set
-    
+
     def setStats(self, mean, stdev):
         self.mean = mean
         self.stdev = stdev
@@ -48,7 +47,7 @@ class TTS_Item:
     def __init__(self, id):
         self.id = id
         self.filepath = fileFromId(id)
-        
+
         self.textFeature = None     # numpy array
         self.audioFeature = None    # numpy array
         self.text = None
@@ -66,19 +65,21 @@ class TTS_Item:
         self.text = text
         self.audio = audio
         self.sr = sr
-    
+
     def getData(self):
         return self.text, self.audio, self.sr
-    
+
 ### AUXILLIARY FUNCTIONS ###
 def fileFromId(id):
     return route + id + '.wav'
 
 ### RUNNABLE ###
 missing_ids = {}
-route = './LJSpeech-1.1/wavs/'
 dataset = TTS_Dataset()
-audio_texts = open('./LJSpeech-1.1/metadata.csv','r')
+from pathlib import Path
+root_dir = str(Path(__file__).resolve().parent.parent.parent)
+audio_texts = open(root_dir+"/LJSpeech-1.1/metadata.csv", 'r')
+route = root_dir + "/LJSpeech-1.1/wavs/"
 
 def setup(n_mels, limit=13100):
     extraction.extractData(dataset, n_mels, limit=limit)
