@@ -1,4 +1,4 @@
-### IMPORTS ### 
+### IMPORTS ###
 import re
 import numpy as np
 import nltk
@@ -72,7 +72,7 @@ abbrev = {'mrs' :   'misses',
         'eg'    :   'ee gee'
 }
 
-def expand_abbrevs(text):    
+def expand_abbrevs(text):
     # use regex to make pattern to match with
     pattern = re.compile(r'\b(' + '|'.join(re.escape(key) for key in abbrev.keys()) + r')\b', re.IGNORECASE)
     # function for replacing the found matches
