@@ -1,4 +1,3 @@
-import sounddevice as sd
 import torch
 import torch.nn as nn
 
@@ -34,18 +33,16 @@ class Decoder(nn.Module):
         self.fc = nn.Linear(decoder_hidden_dim, num_mels)
         self.relu = nn.ReLU()
 
-    def forward(self, encoder_outputs, audio_targets, audio_lengths):
-        batch_size, max_seq_len, _ = audio_targets.size()
-        decoder_hidden = None  # init hidden state
+    def forward(self, encoder_outputs, decoder_hidden, audio_targets, audio_lengths):
+        #print(encoder_outputs[0][0][0])
+        _, max_seq_len, _ = audio_targets.size()
         outputs = []
         # teacher forcing - use actual context of known info during training
         for t in range(max_seq_len):
-            if decoder_hidden is not None:
-                attn_weights = self.compute_attention(decoder_hidden[0][-1], encoder_outputs)
-                context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
-            else: # first time step
-                context = encoder_outputs.mean(dim=1, keepdim=True)
-            
+            # use provided encoder context
+            attn_weights = self.compute_attention(decoder_hidden[0][-1], encoder_outputs)
+            context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
+
             decoder_input = torch.cat([audio_targets[:, t, :].unsqueeze(1), context], dim=2)
             # run the RNN
             output, decoder_hidden = self.rnn(decoder_input, decoder_hidden)
@@ -53,6 +50,7 @@ class Decoder(nn.Module):
             # generate prediction
             prediction = self.fc(output)
             outputs.append(prediction)
+        #print(outputs[0][0][0][0])
         outputs = torch.cat(outputs, dim=1)
         return outputs
 
@@ -74,28 +72,28 @@ class Seq2Seq(nn.Module):
         decoder.train()
 
     def forward(self, text_inputs, text_lengths, audio_targets, audio_lengths):
-        encoder_outputs, hidden, cell = self.encoder(text_inputs, text_lengths)
-        outputs = self.decoder(encoder_outputs, audio_targets, audio_lengths)
+        encoder_outputs, hidden, cell = self.encoder(text_inputs, text_lengths)                 # run the encoder
+        decoder_hidden = self.combine_layers(hidden, cell, text_inputs.size(0))                 # fit encoder context for decoder
+        outputs = self.decoder(encoder_outputs, decoder_hidden, audio_targets, audio_lengths)   # run the decoder
         return outputs
-    
+
     def generate(self, text_inputs):
         self.encoder.eval()
         self.decoder.eval()
         with torch.no_grad():
-            text_lengths = torch.tensor([text_inputs.size(1)], dtype=torch.long).to(text_inputs.device)
-            encoder_outputs, hidden, cell = self.encoder(text_inputs, text_lengths)
+            text_lengths_all = torch.tensor([text_inputs.size(1)], dtype=torch.long).to(text_inputs.device)
             batch_size = text_inputs.size(0)
             num_mels = self.decoder.fc.out_features
-            max_length = text_inputs.size(1) * 10
             outputs = []
-            decoder_hidden = None  # init hidden state
-            prev_output = torch.zeros(batch_size, 1, num_mels).to(text_inputs.device)
-            for t in range(max_length):
-                if decoder_hidden is not None:
-                    attn_weights = self.decoder.compute_attention(decoder_hidden[0][-1], encoder_outputs)
-                    context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
-                else: # first time step
-                    context = encoder_outputs.mean(dim=1, keepdim=True)
+            for t in range(text_inputs.size(1)):
+                # set up encoder context
+                text_t = torch.tensor([[text_inputs[0][t]]], dtype=torch.long).to(text_inputs.device)
+                text_lengths = torch.tensor([text_t.size(1)], dtype=torch.long).to(text_inputs.device)
+                encoder_outputs, hidden, cell = self.encoder(text_t, text_lengths)
+                decoder_hidden = self.combine_layers(hidden, cell, batch_size)
+                prev_output = torch.zeros(batch_size, 1, num_mels).to(text_inputs.device)
+                attn_weights = self.decoder.compute_attention(decoder_hidden[0][-1], encoder_outputs)
+                context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
 
                 # run the RNN
                 decoder_input = torch.cat([prev_output, context], dim=2)
@@ -104,7 +102,16 @@ class Seq2Seq(nn.Module):
                 # generate prediction
                 prediction = self.decoder.fc(output)
                 outputs.append(prediction)
-
                 prev_output = prediction
             outputs = torch.cat(outputs, dim=1)
+
         return outputs.squeeze(0).cpu().numpy().T
+
+    def combine_layers(self, hidden, cell, batch_size):
+        # combine bidirectional (2) encoder to unidirectional decoder
+        num_layers, _, hidden_size = hidden.size()
+        hidden = hidden.view(num_layers // 2, 2, batch_size, hidden_size)
+        hidden = hidden.sum(dim=1)
+        cell = cell.view(num_layers // 2, 2, batch_size, hidden_size)
+        cell = cell.sum(dim=1)
+        return hidden, cell
