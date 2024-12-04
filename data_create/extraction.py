@@ -116,6 +116,7 @@ def extractData(destination, n_mels, use_existing_data,  limit=13100):
         hit_limit, last_min = progress_tracker(count, limit, start_time, last_min)
         if hit_limit: break
         count += 1
+    audio_texts.close()
     print('Normalising & Scaling Data')
     destination.setStats(total_mean / count, sqrt(total_var) / count)
     for item in destination.setlist:
