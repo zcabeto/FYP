@@ -6,41 +6,55 @@ from data_create import dataset as ds
 from data_create import text_proc as TextProcessor
 import librosa as lb
 import numpy as np
-from build import train, test, collate_fn, getData, getModel, plotFeatures
+from pathlib import Path
+from build import train, test, collate_fn, getData, getModel, plotFeatures, generate
 import model as NN
 from data_create import audio_proc as AudioProcessor
 
 vocab_size = 70         # = len(ARPAbet)
-embedding_dim = 4900    # likely 50-100 layers for <100,000 sentences
-hidden_dim = 140        # less than embedding_dim to combine & not overfit
+embedding_dims = [4900] # likely 50-100 layers for <100,000 sentences
+hidden_dims = [140]     # less than embedding_dim to combine & not overfit
 num_layers = 2          # start at 2, increase for more quality
 num_mels = 256          # 256 best quality, 80 smallest size. Proper run ~1000
-num_epochs = 11
+num_epochs = 3          # 11 epochs
 learning_rate = 0.01
 batch_size = 32         # how many to process at once, probs small to ensure matchup
 use_existing_data = True
-n = 13000                 # number of datapoints to run
+n = 20                 # number of datapoints to run [20-13000??]
 
 if __name__ == '__main__':
+    num_models = len(embedding_dims)
+    if len(embedding_dims) != len(hidden_dims):
+        raise ValueError("Mismatch in dimensional arrays.")
+    root_dir = str(Path(__file__).resolve().parent.parent)
+
+    ### RUN ALL MODELS ###
     print('Initialising Data')
-    train_set, val_set, test_set = getData(num_mels=num_mels, batch_size=batch_size, n=n, use_existing_data=use_existing_data)
+    data, train_set, val_set, test_set = getData(num_mels=num_mels, batch_size=batch_size, n=n, use_existing_data=use_existing_data)
 
-    print('Initialising Model')
-    model, criterion, optimiser, device = getModel(
-        vocab_size=vocab_size,
-        embedding_dim=embedding_dim,
-        hidden_dim=hidden_dim,
-        num_layers=num_layers,
-        num_mels=num_mels,
-        learning_rate=learning_rate
-    )
+    for i in range(num_models):
+        print(f'Initialising Model #{i}')
+        model, criterion, optimiser, device = getModel(
+            vocab_size=vocab_size,
+            embedding_dim=embedding_dims[i],
+            hidden_dim=hidden_dims[i],
+            num_layers=num_layers,
+            num_mels=num_mels,
+            learning_rate=learning_rate
+        )
 
-    print("Training Model")
-    train(model, train_set, val_set, criterion, optimiser, num_epochs)
+        print(f"Training Model #{i}")
+        train(model, train_set, val_set, criterion, optimiser, num_epochs)
 
-    print("Testing Model")
-    test(model, test_set, criterion, optimiser)
+        print(f"Testing Model #{i}")
+        test(model, test_set, criterion, optimiser)
 
+        print(f"Generating Audio from Model #{i}")
+        audio, spectrogram = generate("hello world", model, data)
+        plotFeatures(spectrogram, f"{root_dir}/audios/spect_{i}", save=True)
+        np.save(f"{root_dir}/audios/data_{i}.npy", audio)
+
+        print('\n\n')    # deliminate models
 '''
 def spectral_subtraction(raw_spectrogram, noise_spectrogram, alpha=2.0, beta=1.0):
     """

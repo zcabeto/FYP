@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from librosa import display
 import numpy as np
 from data_create import text_proc as TextProcessor
+from data_create import audio_proc as AudioProcessor
 from data_create import dataset as ds
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.mps.is_available() else 'cpu')
@@ -40,7 +41,7 @@ def getData(num_mels, batch_size, n, use_existing_data):
         collate_fn=collate_fn,
         num_workers=0
     )
-    return train_loader, val_loader, test_loader
+    return dataset, train_loader, val_loader, test_loader
 
 def getModel(vocab_size, embedding_dim, hidden_dim, num_layers, num_mels, learning_rate):
     encoder = NN.Encoder(
@@ -87,9 +88,11 @@ def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
     textFeatures = TextProcessor.getFeatures("hello world")
     text_input = torch.tensor(textFeatures, dtype=torch.long).unsqueeze(0).to(device)
     for epoch in range(num_epochs):
-        generated_spectrogram = model.generate(text_input)
-        plotFeatures(generated_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_'+str(epoch), save=True)
-        '''print(f"Epoch {epoch} parameters...")
+        '''generated_old_spectrogram = model.generate_old(text_input)
+        plotFeatures(generated_old_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_old_'+str(epoch), save=True)
+        generated_new_spectrogram = model.generate(text_input)
+        plotFeatures(generated_new_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_new_'+str(epoch), save=True)
+        print(f"Epoch {epoch} parameters...")
         for name, param in model.named_parameters():
             if param.requires_grad:
                 print(f"{name}: mean={param.data.mean().item():.4f}, std={param.data.std().item():.4f}")'''
@@ -192,3 +195,10 @@ def plotFeatures(data, data_name, save=False):  # note fft (dense sampling FT), 
         plt.savefig(data_name+'.png')
     else:
         plt.show()
+
+def generate(text, model, dataset):
+    textFeatures = TextProcessor.getFeatures(text)
+    text_input = torch.tensor(textFeatures, dtype=torch.long).unsqueeze(0).to(device)
+    spectrogram = model.generate(text_input)
+    audio = AudioProcessor.spectrogram_to_audio(spectrogram, dataset.mean, dataset.stdev)
+    return audio, spectrogram

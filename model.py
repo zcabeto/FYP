@@ -77,6 +77,35 @@ class Seq2Seq(nn.Module):
         outputs = self.decoder(encoder_outputs, decoder_hidden, audio_targets, audio_lengths)   # run the decoder
         return outputs
 
+    def generate_0(self, text_inputs):
+        self.encoder.eval()
+        self.decoder.eval()
+        with torch.no_grad():
+            text_lengths = torch.tensor([text_inputs.size(1)], dtype=torch.long).to(text_inputs.device)
+            encoder_outputs, hidden, cell = self.encoder(text_inputs, text_lengths)
+            batch_size = text_inputs.size(0)
+            num_mels = self.decoder.fc.out_features
+            max_length = text_inputs.size(1) * 10
+            outputs = []
+            # set up encoder context
+            decoder_hidden = self.combine_layers(hidden, cell, batch_size)
+            prev_output = torch.zeros(batch_size, 1, num_mels).to(text_inputs.device)
+            for t in range(max_length):
+                # apply context for each step
+                attn_weights = self.decoder.compute_attention(decoder_hidden[0][-1], encoder_outputs)
+                context = torch.bmm(attn_weights.unsqueeze(1), encoder_outputs)
+
+                # run the RNN
+                decoder_input = torch.cat([prev_output, context], dim=2)
+                output, decoder_hidden = self.decoder.rnn(decoder_input, decoder_hidden)
+
+                # generate prediction
+                prediction = self.decoder.fc(output)
+                outputs.append(prediction)
+                prev_output = prediction
+            outputs = torch.cat(outputs, dim=1)
+        return outputs.squeeze(0).cpu().numpy().T
+
     def generate(self, text_inputs):
         self.encoder.eval()
         self.decoder.eval()

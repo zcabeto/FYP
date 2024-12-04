@@ -21,9 +21,13 @@ class TTS_Dataset(Dataset):
 
     def split_sets(self, test_amount=0.2, val=0):
         train_set = TTS_Dataset()
+        train_set.mean, train_set.stdev = self.mean, self.stdev
         val_set = None
-        if val: val_set = TTS_Dataset()
+        if val:
+            val_set = TTS_Dataset()
+            val_set.mean, val_set.stdev = self.mean, self.stdev
         test_set = TTS_Dataset()
+        test_set.mean, test_set.stdev = self.mean, self.stdev
         index = 0
         for item in self.setlist:
             if index <= len(self.setlist)*(1-test_amount):

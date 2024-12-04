@@ -99,11 +99,11 @@ def normalise_and_scale(spectrogram, mean, stdev):
     return spectrogram_normalised
 
 ### REVERSAL TO PLAY ###
-def play_mel_spectrogram(spectrogram, mean, stdev, sr=22050):
+def spectrogram_to_audio(spectrogram, mean, stdev, sr=22050):
     spectrogram = denormalise(spectrogram, mean, stdev)
     spectrogram = mel_to_linear(spectrogram)
     audio = reconstruct_waveform(spectrogram)
-    playGeneric(audio, sr=sr)
+    return audio
 
 def reconstruct_waveform(linear_spectrogram, n_fft=1024, hop_length=256, win_length=None, window='hann', n_iter=200):
     waveform = lb.griffinlim(
