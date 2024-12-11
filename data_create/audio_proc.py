@@ -11,7 +11,6 @@ def getAudio(filepath):
     raw_audio, sr = lb.load(filepath, sr=None)
 
     audio = trim_edges(raw_audio)
-    #audio = spectral_gate(audio)
     audio = cut_pauses(audio)
     return audio, sr
 
@@ -28,49 +27,6 @@ def cut_pauses(audio, top_db=40, hop_length=1000):
         segments.append(segment)
     restitched = np.concatenate(segments)
     return restitched
-
-def spectral_gate(y, n_fft=2048, hop_length=512, win_length=None):
-    # Short-time Fourier transform
-    stft_matrix = lb.stft(y, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
-    magnitude, phase = np.abs(stft_matrix), np.angle(stft_matrix)
-
-    # Estimate the noise level by averaging the silent frames
-    noise_mag = np.mean(magnitude[:, :10], axis=1)  # adjust based on your data
-    spectral_gate_threshold = noise_mag * 1.5  # adjust the threshold based on your needs
-
-    # Suppress noise by spectral gating
-    magnitude[magnitude < spectral_gate_threshold[:, None]] = 0
-
-    # Reconstruct the signal
-    filtered_stft = magnitude * np.exp(1j * phase)
-    y_reduced_noise = lb.istft(filtered_stft, hop_length=hop_length, win_length=win_length)
-    return y_reduced_noise
-
-def reduce_noise_with_pca(spectrogram, variance_threshold=0.9):
-    spectrogram = spectrogram.T
-    # Perform PCA to determine number of components to keep
-    pca = PCA()
-    pca.fit(spectrogram)
-    cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
-    n_components_keep = np.searchsorted(cumulative_variance, variance_threshold) + 1
-    # Apply PCA with the desired number of components
-    pca = PCA(n_components=n_components_keep)
-    spectrogram_transformed = pca.fit_transform(spectrogram)
-    spectrogram_transformed[:, :1] = 0
-
-    # Reconstruct the spectrogram
-    spectrogram_reconstructed = pca.inverse_transform(spectrogram_transformed)
-    spectrogram_reconstructed = spectrogram_reconstructed.T
-
-    # deviate useful data from non-useful data
-    for r in range(spectrogram_reconstructed.shape[0]):
-        for c in range(spectrogram_reconstructed.shape[1]):
-            if spectrogram_reconstructed[r,c] < -5:
-                spectrogram_reconstructed[r,c] *= 1.5
-            if spectrogram_reconstructed[r,c] < -15:
-                spectrogram_reconstructed[r,c] = -15
-
-    return spectrogram_reconstructed
 
 
 
@@ -129,13 +85,3 @@ def denormalise(spectrogram, mean, stdev):
     spectrogram = lb.db_to_power(spectrogram, ref=1.0)
     return spectrogram
 
-def playGeneric(audio, sr=22050):
-    audio = np.int16(audio / np.max(np.abs(audio)) * 32767)
-    p = pa.PyAudio()
-    try:
-        stream = p.open(format=pa.paInt16, channels=1, rate=sr, output=True)
-        stream.write(audio.tobytes())
-        stream.stop_stream()
-        stream.close()
-    finally:
-        p.terminate()
