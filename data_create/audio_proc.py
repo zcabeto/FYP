@@ -1,8 +1,6 @@
 ### IMPORTS ###
 import librosa as lb
 import numpy as np
-from sklearn.decomposition import PCA
-from scipy.signal import butter, lfilter
 
 
 

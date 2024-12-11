@@ -1,7 +1,6 @@
 ### IMPORTS ###
 import re
 import numpy as np
-import nltk
 from nltk.corpus import cmudict
 from g2p_en import G2p
 ARPAbet = cmudict.dict()

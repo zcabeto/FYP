@@ -9,11 +9,12 @@ import time
 import datetime
 import matplotlib.pyplot as plt
 from librosa import display
-import numpy as np
 from data_create import text_proc as TextProcessor
 from data_create import audio_proc as AudioProcessor
 from data_create import dataset as ds
-
+from tqdm import tqdm
+import os
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:32'
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.mps.is_available() else 'cpu')
 
 def getData(hparams, use_existing_data):
