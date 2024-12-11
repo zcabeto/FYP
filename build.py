@@ -16,55 +16,55 @@ from data_create import dataset as ds
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.mps.is_available() else 'cpu')
 
-def getData(num_mels, batch_size, n, use_existing_data):
-    dataset = ds.setup(num_mels, limit=n, use_existing_data=use_existing_data)
-    train_dataset, val_dataset, test_dataset = dataset.split_sets(val=10)
+def getData(hparams, use_existing_data):
+    dataset = ds.setup(hparams, use_existing_data=use_existing_data)
+    train_dataset, val_dataset, test_dataset = dataset.split_sets(val=hparams.val_set_size, test=hparams.test_set_size)
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=batch_size,
+        batch_size=hparams.batch_size,
         shuffle=False,
         collate_fn=collate_fn,
         num_workers=0
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=batch_size,
+        batch_size=hparams.batch_size,
         shuffle=False,
         collate_fn=collate_fn,
         num_workers=0
     )
     test_loader = DataLoader(
         test_dataset,
-        batch_size=batch_size,
+        batch_size=hparams.batch_size,
         shuffle=False,
         collate_fn=collate_fn,
         num_workers=0
     )
-    return dataset, train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader
 
-def getModel(vocab_size, embedding_dim, hidden_dim, num_layers, num_mels, learning_rate):
+def getModel(hparams):
     encoder = NN.Encoder(
-        vocab_size=vocab_size,
-        embedding_dim=embedding_dim,
-        encoder_hidden_dim=hidden_dim,
-        num_layers=num_layers
+        vocab_size=hparams.vocab_size,
+        embedding_dim=hparams.encoder_embedding_dim,
+        encoder_hidden_dim=hparams.encoder_hidden_dim,
+        num_layers=hparams.num_layers
     ).to(device)
     decoder = NN.Decoder(
-        decoder_hidden_dim=hidden_dim,
-        encoder_hidden_dim=hidden_dim,
-        num_layers=num_layers,
-        num_mels=num_mels
+        decoder_hidden_dim=hparams.decoder_hidden_dim,
+        encoder_hidden_dim=hparams.encoder_hidden_dim,
+        num_layers=hparams.num_layers,
+        num_mels=hparams.n_mels
     ).to(device)
     model = NN.Seq2Seq(encoder, decoder).to(device)
     criterion = nn.L1Loss().to(device)
-    optimiser = optim.Adam(model.parameters(), lr=learning_rate)
-    return model, criterion, optimiser, device
+    optimiser = optim.Adam(model.parameters(), lr=hparams.learning_rate)
+    return model, criterion, optimiser
 
 def collate_fn(batch):
     text_inputs, audio_targets = zip(*batch)
 
-    # Convert lists to tensors
+    # convert lists to tensors
     text_inputs = [torch.tensor(t, dtype=torch.long) for t in text_inputs]
     text_lengths = torch.tensor([len(t) for t in text_inputs], dtype=torch.long)
 
@@ -72,7 +72,7 @@ def collate_fn(batch):
     audio_targets = [torch.tensor(a.T, dtype=torch.float) for a in audio_targets]
     audio_lengths = torch.tensor([a.size(0) for a in audio_targets], dtype=torch.long)
 
-    # Pad sequences
+    # pad sequences
     text_inputs_padded = pad_sequence(text_inputs, batch_first=True, padding_value=0)
     audio_targets_padded = pad_sequence(audio_targets, batch_first=True, padding_value=0.0)
 
@@ -87,15 +87,8 @@ def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
     print(f"Criterion device: {criterion.weight.device if hasattr(criterion, 'weight') else 'N/A'}")
     textFeatures = TextProcessor.getFeatures("hello world")
     text_input = torch.tensor(textFeatures, dtype=torch.long).unsqueeze(0).to(device)
-    for epoch in range(num_epochs):
-        '''generated_old_spectrogram = model.generate_old(text_input)
-        plotFeatures(generated_old_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_old_'+str(epoch), save=True)
-        generated_new_spectrogram = model.generate(text_input)
-        plotFeatures(generated_new_spectrogram, '../../../../../ug/2021/etomlin/imgs/generated_new_'+str(epoch), save=True)
-        print(f"Epoch {epoch} parameters...")
-        for name, param in model.named_parameters():
-            if param.requires_grad:
-                print(f"{name}: mean={param.data.mean().item():.4f}, std={param.data.std().item():.4f}")'''
+    
+    for epoch in range(hparams.epochs):
         start_time = time.time()
         model.train()
         total_loss = 0
@@ -133,9 +126,9 @@ def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
 
         avg_loss = total_loss / len(train_loader)
         time_passed = datetime.timedelta(seconds=(time.time() - start_time))
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}, Time: {time_passed}')
+        print(f'Epoch [{epoch+1}/{hparams.epochs}], Loss: {avg_loss:.4f}, Time: {time_passed}')
 
-        # step the lr with quick validation
+        # step the lr with a quick validation
         model.eval()
         validation_loss = 0
         with torch.no_grad():
