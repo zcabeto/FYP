@@ -79,51 +79,55 @@ def collate_fn(batch):
 
     return text_inputs_padded.to(device), text_lengths.to(device), audio_targets_padded.to(device), audio_lengths.to(device)
 
+def compute_masked_loss(outputs, targets, target_lengths, criterion):
+    # create mask
+    max_len = targets.size(1)
+    mask = torch.arange(max_len, device=device)[None, :] < target_lengths[:, None]
 
-def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
+    # shape both to [batch_size, max_len, n_mels]
+    mask = mask.unsqueeze(-1)
+    outputs = outputs.transpose(1, 2)
+    mask = mask.expand_as(outputs)
+
+    # apply mask
+    outputs_masked = outputs[mask]
+    targets_masked = targets[mask]
+
+    # compute loss
+    loss = criterion(outputs_masked, targets_masked)
+    return loss
+
+def move_to_device(data):
+    for i in range(len(data)):
+        data[i] = data[i].to(device)
+
+def train(model, train_loader, val_loader, criterion, optimiser, hparams):
     scheduler = ReduceLROnPlateau(optimiser, mode='min', factor=0.5, patience=3, verbose=True)
     torch.backends.cudnn.benchmark = True
-    print(f"Model device: {next(model.parameters()).device}")
-    print(f"Optimiser device: {optimiser.param_groups[0]['params'][0].device}")
-    print(f"Criterion device: {criterion.weight.device if hasattr(criterion, 'weight') else 'N/A'}")
-    textFeatures = TextProcessor.getFeatures("hello world")
-    text_input = torch.tensor(textFeatures, dtype=torch.long).unsqueeze(0).to(device)
     
     for epoch in range(hparams.epochs):
         start_time = time.time()
         model.train()
         total_loss = 0
-        for batch_idx, (text_inputs, text_lengths, audio_targets, audio_lengths) in enumerate(train_loader):
-            '''if batch_idx == 0:
-                for item in range(len(audio_targets)):
-                    audio_target_np = audio_targets[item].detach().cpu().numpy()
-                    #audio_pca_target_np = audio_pca_targets[item].detach().cpu().numpy()
-                    plotFeatures(audio_target_np, '../../../../../ug/2021/etomlin/imgs/normal_'+str(item), save=True)
-                    #plotFeatures(audio_pca_target_np, '../../../../../ug/2021/etomlin/imgs/pca_'+str(item), save=True)'''
+        for batch_idx, (text_inputs, text_lengths, audio_targets, audio_lengths) in tqdm(enumerate(train_loader)):
             # move data to device
-            text_inputs = text_inputs.to(device)
-            text_lengths = text_lengths.to(device)
-            audio_targets = audio_targets.to(device)
-            audio_lengths = audio_lengths.to(device)
+            move_to_device([text_inputs, text_lengths, audio_targets, audio_lengths])
             optimiser.zero_grad()
 
             # run the model
             outputs = model(text_inputs, text_lengths, audio_targets, audio_lengths)
 
             # compute loss with masking
-            max_len = audio_targets.size(1)
-            mask = torch.arange(max_len, device=device)[None, :] < audio_lengths[:, None]
-            mask = mask.unsqueeze(-1).expand_as(outputs)  # shape is [batch_size, max_len, num_mels]
-            outputs_masked = outputs[mask]
-            targets_masked = audio_targets[mask]
-            loss = criterion(outputs_masked, targets_masked)
+            loss = compute_masked_loss(outputs, audio_targets, audio_lengths, criterion)
 
-            # prep next loop
-            loss.backward()
-            # Apply gradient clipping to avoid exploding gradients
+            # prep next loop + gradient clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5)
+            loss.backward()
             optimiser.step()
             total_loss += loss.item()
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         avg_loss = total_loss / len(train_loader)
         time_passed = datetime.timedelta(seconds=(time.time() - start_time))
@@ -133,62 +137,60 @@ def train(model, train_loader, val_loader, criterion, optimiser, num_epochs):
         model.eval()
         validation_loss = 0
         with torch.no_grad():
-            for batch_val_idx, (text_val_inputs, text_val_lengths, audio_val_targets, audio_val_lengths) in enumerate(val_loader):
-                text_val_inputs = text_val_inputs.to(device)
-                text_val_lengths = text_val_lengths.to(device)
-                audio_val_targets = audio_val_targets.to(device)
-                audio_val_lengths = audio_val_lengths.to(device)
-                outputs = model(text_val_inputs, text_val_lengths, audio_val_targets, audio_val_lengths)
-                loss = criterion(outputs, audio_val_targets)
+            for batch_idx, (text_val_inputs, text_val_lengths, audio_val_targets, audio_val_lengths) in enumerate(val_loader):
+                # move the data to device
+                move_to_device([text_val_inputs, text_val_lengths, audio_val_targets, audio_val_lengths])
+                
+                # run the model
+                outputs_val = model(text_val_inputs, text_val_lengths, audio_val_targets, audio_val_lengths)
+                
+                # compute loss with masking
+                loss = compute_masked_loss(outputs_val, audio_val_targets, audio_val_lengths, criterion)
+
+                # prep next loop
                 validation_loss += loss.item()
 
         avg_validation_loss = validation_loss / len(val_loader)
         print(f"Validation Loss: {avg_validation_loss:.4f}")
         scheduler.step(avg_validation_loss)
-    #print(outputs)
 
-def test(model, test_loader, criterion, optimiser):
+def test(model, test_loader, criterion):
     model.eval()
     test_loss = 0.0
-    with torch.no_grad():  # disable gradients
-        for text_inputs, text_lengths, audio_targets, audio_lengths in test_loader:
+    with torch.no_grad():
+        for batch_idx, (text_test_inputs, text_test_lengths, audio_test_targets, audio_test_lengths) in enumerate(test_loader):
             # move data to device
-            text_inputs = text_inputs.to(device)
-            text_lengths = text_lengths.to(device)
-            audio_targets = audio_targets.to(device)
-            audio_lengths = audio_lengths.to(device)
+            move_to_device([text_test_inputs, text_test_lengths, audio_test_targets, audio_test_lengths])
 
             # run the model
-            outputs = model(text_inputs, text_lengths, audio_targets, audio_lengths)
+            outputs = model(text_test_inputs, text_test_lengths, audio_test_targets, audio_test_lengths)
 
             # compute loss with masking
-            max_len = audio_targets.size(1)
-            mask = torch.arange(max_len, device=device)[None, :] < audio_lengths[:, None]
-            mask = mask.unsqueeze(-1).expand_as(outputs)  # shape is [batch_size, max_len, num_mels]
-            outputs_masked = outputs[mask]
-            targets_masked = audio_targets[mask]
+            loss = compute_masked_loss(outputs, audio_test_targets, audio_test_lengths, criterion)
 
-            # compute loss
-            loss = criterion(outputs_masked, targets_masked)
+            # prep next loop
             test_loss += loss.item()
 
     avg_test_loss = test_loss / len(test_loader)
     print(f'Average Test Loss: {avg_test_loss:.4f}')
     return avg_test_loss
 
-def plotFeatures(data, data_name, save=False):  # note fft (dense sampling FT), hopsize, windowsize stuff for later
+def plotFeatures(data, data_name, save=False):
+    if torch.is_tensor(data):
+        data = data.detach().cpu().numpy()
+
     plt.figure(figsize=(10,4))
     img = display.specshow(data, y_axis='log', x_axis='time', cmap='inferno')
     plt.title(data_name)
     plt.xlabel('Time (s)')
     plt.ylabel('Frequency (Hz)')
-    # plt.yticks(np.array([numbers]), np.array([labels])) to change the values on the axis
     plt.colorbar(img, format="%+2.f dB")
 
     if (save):
         plt.savefig(data_name+'.png')
     else:
         plt.show()
+    plt.close()
 
 def tensor_to_numpy(data):
     if torch.is_tensor(data):
