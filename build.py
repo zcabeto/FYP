@@ -70,7 +70,7 @@ def collate_fn(batch):
     text_lengths = torch.tensor([len(t) for t in text_inputs], dtype=torch.long)
 
     # note that audio must be transposed to get shape (t, n_mels)
-    audio_targets = [torch.tensor(a.T, dtype=torch.float) for a in audio_targets]
+    audio_targets = [a.T.clone().detach().float() for a in audio_targets]
     audio_lengths = torch.tensor([a.size(0) for a in audio_targets], dtype=torch.long)
 
     # pad sequences
@@ -190,9 +190,20 @@ def plotFeatures(data, data_name, save=False):  # note fft (dense sampling FT), 
     else:
         plt.show()
 
-def generate(text, model, dataset):
+def tensor_to_numpy(data):
+    if torch.is_tensor(data):
+        data = data.detach().cpu().numpy()
+    if len(data.shape) == 3:
+        data = data.squeeze(0)
+    return data
+
+def generate(text, model):
     textFeatures = TextProcessor.getFeatures(text)
-    text_input = torch.tensor(textFeatures, dtype=torch.long).unsqueeze(0).to(device)
-    spectrogram = model.generate(text_input)
-    audio = AudioProcessor.spectrogram_to_audio(spectrogram, dataset.mean, dataset.stdev)
-    return audio, spectrogram
+    text_input = torch.from_numpy(textFeatures).unsqueeze(0).cuda().long()  # make tensor
+    output = model.inference(text_input)
+    
+    # convert tensors to numpy arrays for use in 2D shape
+    output = tensor_to_numpy(output)
+
+    audio = AudioProcessor.spectrogram_to_audio(output)
+    return audio, output
