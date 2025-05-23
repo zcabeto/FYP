@@ -28,6 +28,8 @@ deactivate; cd ..
 
 The LJSpeech-1.1 dataset can be downloaded from https://keithito.com/LJ-Speech-Dataset/ to have the WAV files placed in /spectrogram_generation/LJSpeech-1.1/wavs. However, this is only needed for training, not for generation.
 
+Additionally, the trained model (for inference/generation) and a folder for the background noise choices can be found on Dropbox via: https://www.dropbox.com/scl/fo/tnmka4n53mxf0lb5guzim/AIE9FhiVPS8m9dxpravmbyA?rlkey=au1s20o8eyj9qxym4syow3m8s&st=rxrtrmij&dl=0
+
 ### RUN INSTRUCTIONS
 In input.tsv, each row should contain a text input, optionally including modification metacharacters, followed by tab-separated values for modification amounts. For full use, many inputs can be listed at once. Note that appending "_ filler" allows the full speech to be produced best, as the final syllable can be a little temperamental.
 
