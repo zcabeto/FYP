@@ -54,7 +54,7 @@ File "SYSTEM/.cache/torch/hub/NVIDIA_DeepLearningExamples_torchhub/PyTorch/Speec
     torch._C._jit_set_autocast_mode(False)
 AttributeError: module 'torch._C' has no attribute '_jit_set_autocast_mode'
 ```
-If you encounter this issue, which is a result of WaveGlow being built before PyTorch 1.7, a simple solution is to change the model.py file to just delete this line.
+If you encounter this issue, which is a result of WaveGlow being built before PyTorch 1.7, a simple solution is to change the cached waveglow/model.py file to just delete this line.
 
 
 
