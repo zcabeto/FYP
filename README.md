@@ -2,8 +2,15 @@
 This repository relates to a UCL MEng Mathematical Computation FYP. It is a fully implemented TTS tool allowing user-inputted text to form playable audio, additionally providing capabilities to manually adjust various speech features of the whole generated audio or individual specific segments. A full description of usage is provided in the related paper, but input.tsv presents some example inputs.
 This code may be freely copied and distributed, provided the source is explicitly acknowledged.
 
+Found on GitHub: https://github.com/zcabeto/FYP
+Make sure to get the rest of the data: https://www.dropbox.com/scl/fo/tnmka4n53mxf0lb5guzim/AIE9FhiVPS8m9dxpravmbyA?rlkey=au1s20o8eyj9qxym4syow3m8s&st=rxrtrmij&dl=0
+
+-------
+
 # The Missing Link in Synthetic Voices: Exploring the Vocal Features Behind Cyberattack Deception
 With recent improvements in AI, we confront the increasing use of deepfake voices in cyberattacks - but how much do we really know about them? With limited existing literature in the field, this paper aims to inspire a line of new research into how synthetic voices deceive victims in social engineering attacks. We launch this field with the creation of a synthetic speech tool configured for user-specified adjustment of various vocal characteristics, meant for use in investigating the properties of manipulative speech patterns. In creating this tool, we conducted a literature review and scoping review to establish the needs of this area and collect existing knowledge on how voices can be used to persuade and deceive. Subsequent ideas for research using this tool are discussed, plotting the future directions of this new field. By cultivating an understanding of synthetic cyberattack-intended speech, we aim to devise better and more knowledgeable preventative measures.
+
+-------
 
 ### SETUP INSTRUCTIONS
 From the root directory, two virtual environments require set-up. The project is made to run in Python 3.6.8, but newer Python3 versions should run the same. Your system should run with CUDA capabilities.
