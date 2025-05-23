@@ -5,6 +5,8 @@ This code may be freely copied and distributed, provided the source is explicitl
 Found on GitHub: https://github.com/zcabeto/FYP
 
 Make sure to get the rest of the data: https://www.dropbox.com/scl/fo/tnmka4n53mxf0lb5guzim/AIE9FhiVPS8m9dxpravmbyA?rlkey=au1s20o8eyj9qxym4syow3m8s&st=rxrtrmij&dl=0
+--> audio_modification/background_noise
+--> spectrogram_modification/model.pt
 
 -------
 
