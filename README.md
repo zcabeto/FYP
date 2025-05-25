@@ -2,8 +2,6 @@
 This repository relates to a UCL MEng Mathematical Computation FYP. It is a fully implemented TTS tool allowing user-inputted text to form playable audio, additionally providing capabilities to manually adjust various speech features of the whole generated audio or individual specific segments. A full description of usage is provided in the related paper, but input.tsv presents some example inputs.
 This code may be freely copied and distributed, provided the source is explicitly acknowledged.
 
-Found on GitHub: https://github.com/zcabeto/FYP
-
 Make sure to get the rest of the data from Dropbox: https://www.dropbox.com/scl/fo/tnmka4n53mxf0lb5guzim/AIE9FhiVPS8m9dxpravmbyA?rlkey=au1s20o8eyj9qxym4syow3m8s&st=rxrtrmij&dl=0  
 --> /audio_modification/background_noise  
 --> /spectrogram_modification/model.pt
@@ -36,7 +34,7 @@ pip install -r requirements.txt
 deactivate; cd ..
 ```
 
-The LJSpeech-1.1 dataset can be downloaded from https://keithito.com/LJ-Speech-Dataset/ to have the WAV files placed in /spectrogram_generation/LJSpeech-1.1/wavs. However, this is only needed for training, not for generation. For inference and generation, the trained model (model.pt) and the folder of background noise choices can be found on Dropbox via the link above.
+For training data, download the LJSpeech-1.1 dataset can be downloaded from https://keithito.com/LJ-Speech-Dataset/ to have the WAV files placed in /spectrogram_generation/LJSpeech-1.1/wavs. For inference and generation, the trained model (model.pt) and the folder of background noise choices can be found via the Dropbox link above.
 
 ### RUN INSTRUCTIONS
 In input.tsv, each row should contain a text input, optionally including modification metacharacters, followed by tab-separated values for modification amounts. For full use, many inputs can be listed at once. Note that appending "_ filler" allows the full speech to be produced best, as the final syllable can be a little temperamental.
