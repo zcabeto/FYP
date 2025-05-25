@@ -21,7 +21,7 @@ From the root directory, two virtual environments require set-up. The project is
 To form the environment for text-to-mel spectrogram conversion, the following virtual environment is needed. If a different environment name is used, change the run.sh script to reflect this. The requirements may optionally require updates to setuptools to install.
 ```console
 cd spectrogram_generation
-python3 -m venv TTS_Venv
+python -m venv TTS_Venv            # python>=3.8
 source TTS_Venv/bin/activate
 pip install -r requirements.txt
 deactivate; cd ..
@@ -30,7 +30,7 @@ deactivate; cd ..
 The spectrogram to audio conversion uses a pre-trained WaveGlow model using the following virtual environment. 
 ```console
 cd audio_generation
-python3 -m venv WaveGlow_Venv
+python -m venv WaveGlow_Venv        # python3.8
 source WaveGlow_Venv/bin/activate
 pip install -r requirements.txt
 deactivate; cd ..
@@ -48,13 +48,10 @@ To run, having adjusted the run.sh file for system-specific processing and venv 
 
 ------
 
-There is a chance that, upon running, an error in this imported model occurs just before audio generation. Namely:
+If a version of PyTorch>=1.7 _must_ be used (instead of version 1.6 as required), you can still use this codebase after a small edit. You will likely receive an error in the WaveGlow imported model as follows, and solve the issue by editing the cached /waveglow/model.py file to just delete this line.
 ```console
 File "SYSTEM/.cache/torch/hub/NVIDIA_DeepLearningExamples_torchhub/PyTorch/SpeechSynthesis/Tacotron2/waveglow/model.py", line 28, in <module>
     torch._C._jit_set_autocast_mode(False)
 AttributeError: module 'torch._C' has no attribute '_jit_set_autocast_mode'
 ```
-If you encounter this issue, which is a result of WaveGlow being built before PyTorch 1.7, a simple solution is to change the cached /waveglow/model.py file to just delete this line.
-
-
 
